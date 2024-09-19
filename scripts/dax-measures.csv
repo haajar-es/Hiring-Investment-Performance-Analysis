@@ -1,0 +1,948 @@
+﻿MEASURE_NAME,EXPRESSION,MEASUREGROUP_NAME,MEASURE_DISPLAY_FOLDER
+ShowValueForDates,"VAR LastDateWithData = 
+    CALCULATE( MAX('Hiring Investment'[EOM_WID]), REMOVEFILTERS() )
+VAR FirstDateVisible =
+    MIN('Date'[Date])
+VAR Result = FirstDateVisible <= LastDateWithData
+RETURN
+    Result",Date,
+Total FTE,"SUMX(
+    SUMMARIZE(
+        'Role and Spend',
+        'Role and Spend'[Index],
+        ""DistinctFTE"", MAX('Hiring Investment'[FTE No.])
+    ),
+    [DistinctFTE]
+)",Hiring Investment,Headcount
+Actual AC,"SUMX(
+    'Hiring Investment',
+    'Hiring Investment'[Actual])",Hiring Investment,Base
+Delta ΔBU,[Actual AC] - [Budget BU],Hiring Investment,Base
+Plan YTD Cost,"SUMX(
+    'Hiring Investment',
+    ('Hiring Investment'[Planned Months YTD] * [Plan Monthly Cost])
+)",Hiring Investment,
+Calendar Year Cost,[Budget BU],Hiring Investment,Growth
+Plan Monthly Cost,"CALCULATE(
+    SUMX(
+        'Hiring Investment', 
+        DIVIDE([Calendar Year Cost], 'Hiring Investment'[Total No. Months in Plan])
+    )
+)",Hiring Investment,
+Actual YTD,"IF (
+    [ShowValueForDates],
+    CALCULATE ( 
+        [Actual AC], 
+        DATESYTD ( 'Date'[Date] ) 
+    )
+)",Hiring Investment,Growth
+Budget YTD,"IF (
+    [ShowValueForDates],
+    CALCULATE ( 
+        [BU BarChart], 
+        DATESYTD ( 'Date'[Date] ) 
+    )
+)",Hiring Investment,Growth
+Variance YTD,[Plan YTD Cost] - [Actual YTD Spend],Hiring Investment,
+Spend Commitment,"VAR SpendInitiated =
+    SELECTEDVALUE ( 'Role and Spend'[Spend Initiated] )
+VAR CalendarYearCost = [Calendar Year Cost]
+VAR ActualYTDSpend = [Actual YTD Spend]
+VAR VarianceYTD = [Variance YTD]
+VAR CommitedSpend = ( [Calendar Year Cost] - [Actual YTD Spend] - [Variance YTD] )
+VAR Result =
+    SWITCH ( SpendInitiated, ""N"", 0, ""Y"", CommitedSpend, BLANK () )
+RETURN
+    Result",Hiring Investment,
+SpendCommit,"IF(
+    MAX('Role and Spend'[Spend Initiated]) = ""N"", 
+    0,
+    IF(
+        MAX('Role and Spend'[Spend Initiated]) = ""Y"",
+        [Calendar Year Cost] - 
+        [Actual YTD Spend] - 
+        [Variance YTD],
+        BLANK()
+    )
+)",Hiring Investment,
+Budget Investment,"SUMX(
+    'Hiring Investment',
+    ('Hiring Investment'[Planned Months YTD] * [Plan Monthly Cost])
+)",Hiring Investment,Investment FTE or Non-FTE
+Variance Investment,[Budget Investment] - [Spend Investment],Hiring Investment,Investment FTE or Non-FTE
+Budget FTE Investments,"SUMX(
+    FILTER(
+        'Hiring Investment',
+        RELATED('Role and Spend'[FTE Category]) = ""FTE""),
+        'Hiring Investment'[Planned Months YTD] * [Plan Monthly Cost]
+)",Hiring Investment,Investment FTE or Non-FTE
+Budget Non-FTE Investments,"SUMX(
+    FILTER(
+        'Hiring Investment',
+        RELATED('Role and Spend'[FTE Category]) = ""Non-FTE""),
+        'Hiring Investment'[Planned Months YTD] * [Plan Monthly Cost]
+)",Hiring Investment,Investment FTE or Non-FTE
+Spend Investment,"SUMX('Hiring Investment',
+        [Plan Monthly Cost] * 'Hiring Investment'[Month No. Actual YTD])",Hiring Investment,Investment FTE or Non-FTE
+Spend FTE Investments,"SUMX(
+    FILTER(
+        'Hiring Investment',
+        RELATED('Role and Spend'[FTE Category]) = ""FTE""),
+        [Plan Monthly Cost] * 'Hiring Investment'[Month No. Actual YTD]
+)",Hiring Investment,Investment FTE or Non-FTE
+Spend Non-FTE Investments,"SUMX(
+    FILTER(
+        'Hiring Investment',
+        RELATED('Role and Spend'[FTE Category]) = ""Non-FTE""),
+        [Plan Monthly Cost] * 'Hiring Investment'[Month No. Actual YTD]
+)",Hiring Investment,Investment FTE or Non-FTE
+Variance FTE Investment,[Budget FTE Investments] - [Spend FTE Investments],Hiring Investment,Investment FTE or Non-FTE
+Variance Non-FTE Investment,[Budget Non-FTE Investments] - [Spend Non-FTE Investments],Hiring Investment,Investment FTE or Non-FTE
+Actual Previous Month (PM),"IF(
+    [ShowValueForDates],
+    CALCULATE(
+        [Actual AC],
+        CALCULATETABLE(
+            DATEADD( 'Date'[Date], -1, MONTH ),
+            'Date'[DateWithValue] = TRUE
+        )
+    )
+)",Hiring Investment,Growth
+Actual MTD,"IF (
+    [ShowValueForDates],
+    CALCULATE ( 
+        [Actual AC], 
+        DATESMTD ( 'Date'[Date] ) )
+)",Hiring Investment,Growth
+Actual QTD,"IF(
+    [ShowValueForDates],
+    CALCULATE(
+        [Actual AC],
+        DATESQTD('Date'[Date])
+    )
+)",Hiring Investment,Growth
+Actual Previous Quarter (PQ),"IF(
+    [ShowValueForDates],
+    CALCULATE(
+        [Actual AC],
+        CALCULATETABLE(
+            DATEADD( 'Date'[Date], -1, QUARTER ),
+            'Date'[DateWithValue] = TRUE
+        )
+    )
+)",Hiring Investment,Growth
+Actual MOM,"VAR ValueCurrentPeriod = [Actual AC]
+VAR ValuePreviousPeriod = [Actual Previous Month (PM)]
+VAR Result =
+    IF(
+        NOT ISBLANK( ValueCurrentPeriod ) &&
+            NOT ISBLANK( ValuePreviousPeriod ),
+        ValueCurrentPeriod - ValuePreviousPeriod
+    )
+RETURN
+    Result",Hiring Investment,Growth
+Actual MOM %,"DIVIDE(
+    [Actual MOM],
+    [Actual Previous Month (PM)]
+)",Hiring Investment,Growth
+Actual QOQ,"VAR ValueCurrentPeriod = [Actual AC]
+VAR ValuePreviousPeriod = [Actual Previous Quarter (PQ)]
+VAR Result =
+    IF (
+        NOT ISBLANK ( ValueCurrentPeriod ) 
+            && NOT ISBLANK ( ValuePreviousPeriod ),
+        ValueCurrentPeriod - ValuePreviousPeriod
+    )
+RETURN
+    Result",Hiring Investment,Growth
+Actual QOQ %,"DIVIDE ( 
+    [Actual QOQ],
+    [Actual Previous Quarter (PQ)]
+)",Hiring Investment,Growth
+Delta ΔBU%,"DIVIDE(
+    [Delta ΔBU], [Budget BU], 0)",Hiring Investment,Base
+Variance,"IF([Actual AC] > [BU BarChart], [Actual AC] - [BU BarChart], [Actual AC] - [BU BarChart])",Hiring Investment,
+Budget BU,"SUMX(
+    'Hiring Investment',
+    'Hiring Investment'[Budget])",Hiring Investment,Base
+Budget Previous Month (PM),"IF(
+    [ShowValueForDates],
+    CALCULATE(
+        [Budget BU],
+        CALCULATETABLE(
+            DATEADD( 'Date'[Date], -1, MONTH ),
+            'Date'[DateWithValue] = TRUE
+        )
+    )
+)",Hiring Investment,Growth
+Delta ΔHCPlan,ABS([Headcount Hires] - [Headcount Plan]),Hiring Investment,Headcount
+Budget Previous Quarter (PQ),"IF(
+    [ShowValueForDates],
+    CALCULATE(
+        [Budget BU],
+        CALCULATETABLE(
+            DATEADD( 'Date'[Date], -1, QUARTER ),
+            'Date'[DateWithValue] = TRUE
+        )
+    )
+)",Hiring Investment,Growth
+Budget QOQ,"VAR ValueCurrentPeriod = [Budget BU]
+VAR ValuePreviousPeriod = [Budget Previous Quarter (PQ)]
+VAR Result =
+    IF (
+        NOT ISBLANK ( ValueCurrentPeriod ) 
+            && NOT ISBLANK ( ValuePreviousPeriod ),
+        ValueCurrentPeriod - ValuePreviousPeriod
+    )
+RETURN
+    Result",Hiring Investment,Growth
+Headcount Plan,"CALCULATE(
+    DISTINCTCOUNT('Role and Spend'[Index]),
+    FILTER(
+        'Hiring Investment',
+        'Hiring Investment'[Month Hiring Plan] IN VALUES('Date'[Date])
+    )
+)",Hiring Investment,Headcount
+Headcount Hires,"CALCULATE(
+    DISTINCTCOUNT('Role and Spend'[Index]),
+    FILTER(
+        'Hiring Investment',
+        'Hiring Investment'[Month Hiring Actual] IN VALUES('Date'[Date]) &&
+        'Hiring Investment'[Actual YTD Investment Spend] > 0
+    )
+)",Hiring Investment,Headcount
+Delta ΔHCPlan%,"DIVIDE(
+    [Headcount Hires], [Headcount Plan], 0)",Hiring Investment,Headcount
+HC Hiring Prev Month (PM),"CALCULATE (
+    [Headcount Hires],
+    CALCULATETABLE ( DATEADD ( 'Date'[Date], -1, MONTH ) )
+)",Hiring Investment,Headcount
+Actual YTD Spend,"CALCULATE(
+    SUMX('Hiring Investment',
+        [Plan Monthly Cost] * 'Hiring Investment'[Month No. Actual YTD]))",Hiring Investment,Growth
+HC Plan Prev Month (PM),"CALCULATE (
+    [Headcount Plan],
+    CALCULATETABLE ( DATEADD ( 'Date'[Date], -1, MONTH ) )
+)",Hiring Investment,Headcount
+Budget QTD,"IF(
+    [ShowValueForDates],
+    CALCULATE(
+        [Budget BU],
+        DATESQTD('Date'[Date])
+    )
+)",Hiring Investment,Growth
+AC %,"DIVIDE(
+    SUM('Hiring Investment'[Actual]), SUM('Hiring Investment'[Budget]), 0)",Hiring Investment,Base
+Average Annualized Cost Per Hire,"VAR TotalHiringCosts = SUM('Hiring Investment'[Actual])
+VAR TotalHires = COUNT('Hiring Investment'[Index])  // Assuming EmployeeID is unique for each hire
+VAR YearsCount = DISTINCTCOUNT('Hiring Investment'[Month Hiring Actual])  // Assuming HireDate is the date of hire
+
+RETURN
+IF(
+    TotalHires > 0,
+    TotalHiringCosts / TotalHires * YearsCount,
+    0
+)",Hiring Investment,Headcount
+Budget MTD,"IF (
+    [ShowValueForDates],
+    CALCULATE ( 
+        [Budget BU], 
+        DATESMTD ( 'Date'[Date] ) )
+)",Hiring Investment,Growth
+HC Hired QTD,"IF(
+    [ShowValueForDates],
+    CALCULATE(
+        [Headcount Hires],
+        DATESQTD('Date'[Date])
+    )
+)",Hiring Investment,Headcount
+HC Hired Previous Quarter (PQ),"IF(
+    [ShowValueForDates],
+    CALCULATE(
+        [Headcount Hires],
+        CALCULATETABLE(
+            DATEADD( 'Date'[Date], -1, QUARTER ),
+            'Date'[DateWithValue] = TRUE
+        )
+    )
+)",Hiring Investment,Headcount
+HC Hired YTD,"IF(
+    [ShowValueForDates],
+    CALCULATE(
+        [Headcount Hires],
+        DATESYTD('Date'[Date])
+    )
+)",Hiring Investment,Headcount
+Hires FTE,"CALCULATE (
+    COUNTROWS ( 'Role and Spend' ),
+    'Role and Spend'[FTE Category] = ""FTE"",
+    FILTER (
+        'Hiring Investment',
+        'Hiring Investment'[Month Hiring Actual] IN VALUES ( 'Date'[Date] )
+    )
+)",Hiring Investment,Headcount
+Hires Non-FTE,"CALCULATE(
+    COUNTROWS('Role and Spend'),
+    'Role and Spend'[FTE Category] = ""Non-FTE"",
+        FILTER(
+        'Hiring Investment',
+        'Hiring Investment'[Month Hiring Actual] IN VALUES('Date'[Date]) 
+)
+
+)",Hiring Investment,Headcount
+HC FTE & Non-FTE,"CALCULATE(
+    DISTINCTCOUNT('Hiring Investment'[Index]),
+    FILTER(
+        'Hiring Investment',
+        'Hiring Investment'[Investment Category] IN {""FTE"", ""Non-FTE""}
+    )
+)",Hiring Investment,Headcount
+Delta ΔHC_Dummy,[Delta ΔHCPlan],Hiring Investment,Headcount
+Variance Status,"SWITCH(
+    TRUE(),
+    [Delta ΔBU%] > 0, ""Overbudget"",
+    [Budget BU] = 0, ""No Budget Allocated"",
+    [Delta ΔBU%] = 0, ""Fully Utilized"",
+    [Delta ΔBU%] < 0, ""Underbudget"",
+    BLANK()
+)",Hiring Investment,Base
+Delta ΔACBU YTD,[Actual YTD] - [Budget YTD],Hiring Investment,Growth
+Delta ΔACBU% YTD,"DIVIDE(
+    [Delta ΔACBU YTD], [Budget YTD], 0)",Hiring Investment,Growth
+SVG Style,"""<style>
+    <![CDATA[
+      text{
+        font-family: Segoe UI;
+        font-size: 14px;
+        alignment-baseline: middle;
+      }
+    ]]>
+  </style>""",_Measures,Viz Chart IBCS Investment
+Average AC,"ROUND (
+    AVERAGEX ( ALLSELECTED ( 'Department' ), [Actual AC] ),
+    0
+)",_Measures,Viz Chart IBCS Investment
+DeltaBU SVG,"VAR _ColorGrey = ""#c6c6c6""
+VAR _ColorRed = ""#a4031f""
+VAR _ColorGreen = ""#384d48""
+VAR _Value =
+    --ΔBU
+    IF ( HASONEVALUE ( Department[Department] ), [DeltaBU], [Average DeltaBU] )
+VAR _FontWeight =
+    --'normal' font for sales persons, 'bold' font for total row (average)
+    IF (
+        HASONEVALUE ( Department[Department] ),
+        ""normal"",
+        ""bold""
+    )
+VAR _maxValue =
+    --max value to calcualte axis X scale
+    MAX (
+        ABS ( MAXX ( ALLSELECTED ( 'Department' ), [DeltaBU] ) ),
+        ABS ( MINX ( ALLSELECTED ( 'Department' ), [DeltaBU] ) )
+    )
+VAR _WidthValue =
+    --bar width (numeric value)
+    ( DIVIDE ( ABS ( _Value ), _maxValue ) / 4.8 ) * 0.5
+VAR _Width =
+    --bar width - text for SVG
+    FORMAT ( _WidthValue, ""0.0%"" )
+VAR _barColor =
+    --green or red
+    IF ( _Value > 0, _ColorGreen, _ColorRed )
+VAR _X =
+    --x position of a bar
+    SWITCH (
+        TRUE (),
+        _Value >= 0, ""50%"",
+        _Value < 0, FORMAT ( 0.5 - _WidthValue, ""0%"" )
+    )
+VAR _XText =
+    --x position of a label
+    SWITCH (
+        TRUE (),
+        _Value >= 0, FORMAT ( 0.5 + _WidthValue, ""0%"" ),
+        _Value < 0, _X
+    )
+VAR _Anchor =
+    --text anchor
+    SWITCH ( TRUE (), _Value >= 0, ""start"", _Value < 0, ""end"" )
+VAR _DX =
+    --text offset along axis X
+    SWITCH ( TRUE (), _Value >= 0, 5, _Value < 0, -5 )
+VAR _Rank =
+    --row value rank to ensure correct column sorting
+    10000
+        + RANKX ( ALLSELECTED ( 'Department' ), [DeltaBU],, ASC )
+VAR _SVG =
+    --SVG code
+    --header
+    --comment with Rank text for sorting
+    --line (axis Y)
+    --rectangle for DeltaPY (green or red)
+    --text data label for DeltaPY -- ""+#,0;-#,0;#,0""
+    --SVG style
+    ""data:image/svg+xml;utf8,"" & ""<svg xmlns=""""http://www.w3.org/2000/svg"""">
+    /*"" & _Rank & ""*/ 
+    <line  x1=""""50%"""" x2=""""50%"""" y1=""""0%"""" y2=""""100%"""" stroke="""""" & _ColorGrey & """""" stroke-width=""""1""""></line >
+    <rect y=""""17%"""" x="""""" & _X & """""" width="""""" & _Width & """""" height=""""67%"""" fill="""""" & _barColor & """"""></rect>    
+    <text text-anchor="""""" & _Anchor & """""" x="""""" & _XText & """""" dx="""""" & _DX & """""" y=""""55%"""" font-weight="""""" & _FontWeight & """""">""
+        & FORMAT ( _Value, ""+#,##0,.0;-#,##0,.0"" ) & ""</text>"" & [SVG Style] & ""
+</svg>""
+RETURN
+    _SVG",_Measures,Viz Chart IBCS Investment
+DeltaBU,[Actual AC] - [BU BarChart],_Measures,Viz Chart IBCS Investment
+Average DeltaBU,"ROUND (
+    AVERAGEX ( ALLSELECTED ( Department[Department] ), [Actual AC] - [BU BarChart] ),
+    0
+)",_Measures,Viz Chart IBCS Investment
+DeltaBU% SVG,"VAR _ColorGrey = ""#c6c6c6""
+VAR _ColorRed = ""#a4031f""
+VAR _ColorGreen = ""#384d48""
+VAR _ColorBlack = ""#404040""
+VAR _Value =
+    --ΔPY%
+    IF (
+        HASONEVALUE ( Department[Department] ),
+        [DeltaBU%],
+        [Average DeltaBU%]
+    )
+VAR _FontWeight =
+    --'normal' font for sales persons, 'bold' font for total row (average)
+    IF (
+        HASONEVALUE ( Department[Department] ),
+        ""normal"",
+        ""bold""
+    )
+VAR _maxValue =
+    --max value to calcualte axis X scale
+    MAX (
+        ABS ( MAXX ( ALLSELECTED ( 'Department' ), [DeltaBU%] ) ),
+        ABS ( MINX ( ALLSELECTED ( 'Department' ), [DeltaBU%] ) )
+    )
+VAR _WidthValue =
+    --bar width (numeric value)
+    ( DIVIDE ( ABS ( _Value ), _maxValue ) / 3.5 ) * 0.7
+VAR _Width =
+    --bar width - text for SVG
+    FORMAT ( _WidthValue, ""0.0%"" )
+VAR _barColor =
+    --green or red
+    IF ( _Value > 0, _ColorGreen, _ColorRed )
+VAR _X =
+    --x position of a bar (pin)
+    SWITCH (
+        TRUE (),
+        _Value >= 0, ""50%"",
+        _Value < 0, FORMAT ( 0.5 - _WidthValue, ""0.0%"" )
+    )
+VAR _XPinhead =
+    --x position of a bar (pinhead)
+    SWITCH (
+        TRUE (),
+        _Value >= 0,
+            FORMAT ( 0.5 + _WidthValue - 3 / 200, ""0.0%"" ),
+        _Value < 0,
+            FORMAT ( 0.5 - _WidthValue - 3 / 200, ""0.0%"" )
+    )
+VAR _XText =
+    --x position of a label
+    SWITCH (
+        TRUE (),
+        _Value >= 0, FORMAT ( 0.5 + _WidthValue, ""0%"" ),
+        _Value < 0, _X
+    )
+VAR _Anchor =
+    --text anchor
+    SWITCH ( TRUE (), _Value >= 0, ""start"", _Value < 0, ""end"" )
+VAR _DX =
+    --text offset along axis X
+    SWITCH ( TRUE (), _Value >= 0, 10, _Value < 0, - 10 )
+VAR _Rank =
+    --row value rank to ensure correct column sorting
+    10000
+        + RANKX ( ALLSELECTED ( 'Department'[Department] ), [DeltaBU%],, ASC )
+VAR _SVG =
+    --SVG code
+    --header
+    --comment with Rank text for sorting
+    --line (axis Y)
+    --rectangle black pinhead
+    --rectangle for DeltaPY% (green or red)
+    --text data label for DeltaPY%
+    --SVG style
+    ""data:image/svg+xml;utf8,"" & ""<svg xmlns=""""http://www.w3.org/2000/svg"""">
+    /*"" & _Rank & ""*/
+    <line  x1=""""50%"""" x2=""""50%"""" y1=""""0%"""" y2=""""100%"""" stroke="""""" & _ColorGrey & """""" stroke-width=""""1""""></line >
+    <rect y=""""35%"""" x="""""" & _XPinhead & """""" width="""""" & ""10"" & """""" height=""""30%"""" fill="""""" & _ColorBlack & """"""></rect>   
+    <rect y=""""45%"""" x="""""" & _X & """""" width=""""""
+        & FORMAT ( _Width, ""0.0%"" ) & """""" height=""""10%"""" fill="""""" & _barColor & """"""></rect>
+    
+        <text text-anchor="""""" & _Anchor & """""" x="""""" & _XText & """""" dx="""""" & _DX & """""" y=""""55%"""" font-weight="""""" & _FontWeight & """""">""
+        & FORMAT ( _Value, ""+#,0;-#,0;#,0"" ) & ""</text>    
+"" & [SVG Style] & ""
+</svg>""
+RETURN
+    _SVG",_Measures,Viz Chart IBCS Investment
+DeltaBU%,"ROUND (
+    DIVIDE ( [DeltaBU], [Budget BU]) * 100,
+    0
+)",_Measures,Viz Chart IBCS Investment
+Average DeltaBU%,"VAR _DeltaTotal =
+    SUMX ( ALLSELECTED ( Department[Department]), [DeltaBU] )
+VAR _PYTotal =
+    SUMX ( ALLSELECTED ( Department[Department]), [DeltaBU] )
+VAR _Result =
+    ROUND ( DIVIDE ( _DeltaTotal, _PYTotal ) * 100, 0 )
+RETURN
+    _Result",_Measures,Viz Chart IBCS Investment
+BU AC BarChart,"IF(
+    SELECTEDVALUE('BU AC Selection'[Scenario]) = ""Actual"",
+    [Actual AC],
+    [BU BarChart]
+)",_Measures,Viz Bar Chart Variance
+AC BarChart Line,"IF(
+    SELECTEDVALUE('BU AC Selection'[Scenario]) = ""Budget"", BLANK(), [Actual AC])",_Measures,Viz Bar Chart Variance
+BU BarChart Dummy,[BU BarChart],_Measures,Viz Bar Chart Variance
+BU BarChart,[Budget BU],_Measures,Viz Bar Chart Variance
+Upper,"IF(
+    SELECTEDVALUE('BU AC Selection'[Scenario]) = """" &&
+        [Budget BU] < 'Hiring Investment'[Actual AC],
+        'Hiring Investment'[Actual AC], BLANK()
+)",_Measures,Viz Bar Chart Variance
+Lower,"IF(
+    SELECTEDVALUE('BU AC Selection'[Scenario]) = """" &&
+        [Budget BU] > 'Hiring Investment'[Actual AC],
+        'Hiring Investment'[Actual AC], BLANK()
+)",_Measures,Viz Bar Chart Variance
+Format Data Label,"IF (
+    SELECTEDVALUE ( 'BU AC Selection'[Scenario]) = """",
+    ""#FFFFFF00"",
+    ""Grey""
+)",_Measures,Viz Bar Chart Variance
+Period Selection,"VAR MinDate = FORMAT(MIN('Date'[Date]), ""mmm'yyyy"")
+VAR MaxDate = FORMAT(MAX('Date'[Date]), ""mmm'yyyy"")
+VAR Qtr = SELECTEDVALUE('Date'[Quarter])
+VAR DateRange = 
+    SWITCH(
+        TRUE(),
+        MinDate = MaxDate, MinDate,
+        MinDate &""-""&MaxDate
+    )
+VAR Result = 
+    ""Period Range: "" & Qtr &"" ""& DateRange  // & unichar(10) & ""ㅤ""
+
+RETURN
+    Result",_Measures,Text Title
+Blank,BLANK(),_Measures,
+"AC,BU SVG","VAR _ColorAC = ""#384D48""
+VAR _ColorBU = ""#d8d4d5""
+VAR _ValueAvg = [Average AC]
+VAR _ValueAC =
+    IF ( HASONEVALUE ( Department[Department] ), [Actual AC], _ValueAvg )
+VAR _FontWeight =
+    IF ( HASONEVALUE ( 'Department'[Department] ), ""normal"", ""bold"" )
+VAR _ValueBU = [Budget BU]
+VAR _maxValue =
+    --max value (AC and BU)
+    MAX (
+        MAXX ( ALLSELECTED ( 'Department' ), [Actual AC] ),
+        MAXX ( ALLSELECTED ( 'Department' ), [Budget BU] )
+    ) / 0.5
+VAR _WidthAvg =
+    --width (up to 100%)
+    FORMAT ( DIVIDE ( _ValueAvg, _maxValue ), ""0%"" )
+VAR _WidthAC =
+    --width (up to 100%)
+    FORMAT ( DIVIDE ( _ValueAC, _maxValue ), ""0%"" )
+VAR _WidthPY =
+    --width (up to 100%)
+    FORMAT ( DIVIDE ( _ValueBU, _maxValue ), ""0%"" )
+VAR _Rank =
+    --row value rank to ensure correct column sorting (by AC value)
+    100000
+        + RANKX ( ALLSELECTED ( 'Department' ), [Actual AC],, ASC )
+VAR _SVG =
+    --SVG code
+    --header
+    --line (Average AC)
+    --rectangle for PY
+    --rectangle for AC
+    --text data label for AC
+    --SVG style
+    ""data:image/svg+xml;utf8,"" & ""<svg xmlns=""""http://www.w3.org/2000/svg"""">
+    /*"" & _Rank & ""*/
+    <line  x1="""""" & _WidthAvg & """""" x2="""""" & _WidthAvg & """""" y1=""""0%"""" y2=""""100%"""" stroke="""""" & _ColorAC & """""" stroke-width=""""1""""></line >
+    <rect y=""""2%"""" x=""""0"""" width="""""" & _WidthPY & """""" height=""""67%"""" fill="""""" & _ColorBU & """"""></rect>
+    <rect y=""""17%"""" x=""""0"""" width="""""" & _WidthAC & """""" height=""""67%"""" fill="""""" & _ColorAC & """"""></rect>   
+    <text x="""""" & _WidthAC & """""" dx=""""5"""" y=""""55%"""" font-weight="""""" & _FontWeight & """""">""
+        & FORMAT ( _ValueAC, ""#,##0,.0"" ) & ""</text>"" & [SVG Style] & ""
+</svg>""
+RETURN
+    _SVG",_Measures,Viz Chart IBCS Investment
+Target Status Label,"IF(
+    [Delta ΔBU%] >= 0,
+    ""Overspend"",
+    ""Underutilized""
+)",_Measures,Viz Chart Progress
+Dept Title Chart,"SELECTEDVALUE ( Department[Department], ""All Department"" )",_Measures,Viz Chart Progress
+Negative Line,0,_Measures,Viz Chart Line Trend
+Positive Line,0,_Measures,Viz Chart Line Trend
+Above Budget,"IF([Delta ΔBU] > 0, [Delta ΔBU])",_Measures,Viz Chart Line Trend
+Below Budget,"IF([Delta ΔBU] <= 0, [Delta ΔBU])",_Measures,Viz Chart Line Trend
+Title 0,"""Executive Summary""",_Measures,Text Title
+Utilized,"MIN( 1 + [Delta ΔBU%], 1 )",_Measures,Viz Chart Progress
+Balance,"MAX( - [Delta ΔBU%], 0)",_Measures,Viz Chart Progress
+Delta ΔACPQ%,"DIVIDE(
+    [ACvPQ], [Actual AC], 0)",_Measures,KPIs
+Delta ΔACPM%,"DIVIDE(
+    [ACvPM], [Actual AC], 0)",_Measures,KPIs
+ACvPQ Arrow,"VAR UpArrow = ""▲""
+VAR DownArrow = ""▼""
+VAR ACDiff = [ACvPQ]
+
+RETURN
+    IF(
+        ACDiff < 0,
+        FORMAT(ROUND(ACDiff, 0), ""#,##0,.0"") &"" ""&DownArrow, 
+        FORMAT(ROUND(ACDiff, 0), ""#,##0,.0"") &"" ""&UpArrow
+    )",_Measures,KPIs
+ACvPQ,[Actual AC] - [Actual Previous Quarter (PQ)],_Measures,KPIs
+ACvPM Arrow,"VAR UpArrow = ""▲""
+VAR DownArrow = ""▼""
+VAR ACDiff = [ACvPM]
+
+RETURN
+    IF(
+        ACDiff < 0,
+        FORMAT(ROUND(ACDiff, 0), ""#,##0,.0"") &"" ""&DownArrow, 
+        FORMAT(ROUND(ACDiff, 0), ""#,##0,.0"") &"" ""&UpArrow
+    )",_Measures,KPIs
+ACvPM,[Actual AC] - [Actual Previous Month (PM)],_Measures,KPIs
+BUvPM,[Budget BU] - [Budget Previous Month (PM)],_Measures,KPIs
+BUvPM Arrow,"VAR UpArrow = ""▲""
+VAR DownArrow = ""▼""
+VAR ACDiff = [BUvPM]
+
+RETURN
+    IF(
+        ACDiff < 0,
+        FORMAT(ROUND(ACDiff, 0), ""#,##0,.0"") &"" ""&DownArrow,
+        FORMAT(ROUND(ACDiff, 0), ""#,##0,.0"") &"" ""&UpArrow
+    )",_Measures,KPIs
+Delta ΔBUPM%,"DIVIDE(
+    [BUvPM], [Budget BU], 0)",_Measures,KPIs
+Delta ∆ACBUPM,[ACvPM] - [BUvPM],_Measures,KPIs
+Delta ΔACBUPM%,"DIVIDE(
+    [Delta ∆ACBUPM], [Delta ΔBU], 0)",_Measures,KPIs
+Title 1,"""Hiring & Headcount Analysis""",_Measures,Text Title
+SVG Style HC,"""<style>
+    <![CDATA[
+      text{
+        font-family: Segoe UI;
+        font-size: 14px;
+        alignment-baseline: middle;
+      }
+    ]]>
+  </style>""",_Measures,Viz Chart IBCS Headcount
+Average Hires HC,"ROUND (
+    AVERAGEX ( ALLSELECTED ( 'Department' ), [Headcount Hires] ),
+    0
+)",_Measures,Viz Chart IBCS Headcount
+DeltaPlan SVG HC,"VAR _ColorGrey = ""#c6c6c6""
+VAR _ColorRed = ""#a4031f""
+VAR _ColorGreen = ""#384d48""
+VAR _Value =
+    --ΔBU
+    IF ( HASONEVALUE ( Department[Department] ), [DeltaPlan HC], [Average DeltaBU HC] )
+VAR _FontWeight =
+    --'normal' font for sales persons, 'bold' font for total row (average)
+    IF (
+        HASONEVALUE ( Department[Department] ),
+        ""normal"",
+        ""bold""
+    )
+VAR _maxValue =
+    --max value to calcualte axis X scale
+    MAX (
+        ABS ( MAXX ( ALLSELECTED ( 'Department' ), [DeltaPlan HC] ) ),
+        ABS ( MINX ( ALLSELECTED ( 'Department' ), [DeltaPlan HC] ) )
+    )
+VAR _WidthValue =
+    --bar width (numeric value)
+    ( DIVIDE ( ABS ( _Value ), _maxValue ) / 3 ) * 0.5
+VAR _Width =
+    --bar width - text for SVG
+    FORMAT ( _WidthValue, ""0.0%"" )
+VAR _barColor =
+    --green or red
+    IF ( _Value > 0, _ColorGreen, _ColorRed )
+VAR _X =
+    --x position of a bar
+    SWITCH (
+        TRUE (),
+        _Value >= 0, ""50%"",
+        _Value < 0, FORMAT ( 0.5 - _WidthValue, ""0%"" )
+    )
+VAR _XText =
+    --x position of a label
+    SWITCH (
+        TRUE (),
+        _Value >= 0, FORMAT ( 0.5 + _WidthValue, ""0%"" ),
+        _Value < 0, _X
+    )
+VAR _Anchor =
+    --text anchor
+    SWITCH ( TRUE (), _Value >= 0, ""start"", _Value < 0, ""end"" )
+VAR _DX =
+    --text offset along axis X
+    SWITCH ( TRUE (), _Value >= 0, 5, _Value < 0, -5 )
+VAR _Rank =
+    --row value rank to ensure correct column sorting
+    10000
+        + RANKX ( ALLSELECTED ( 'Department' ), [DeltaPlan HC],, ASC )
+VAR _SVG =
+    --SVG code
+    --header
+    --comment with Rank text for sorting
+    --line (axis Y)
+    --rectangle for DeltaPY (green or red)
+    --text data label for DeltaPY -- ""+#,0;-#,0;#,0"" | ""#,##0.0"" | ""+#,##0,.0;-#,##0,.0"" 
+    --SVG style
+    ""data:image/svg+xml;utf8,"" & ""<svg xmlns=""""http://www.w3.org/2000/svg"""">
+    /*"" & _Rank & ""*/ 
+    <line  x1=""""50%"""" x2=""""50%"""" y1=""""0%"""" y2=""""100%"""" stroke="""""" & _ColorGrey & """""" stroke-width=""""1""""></line >
+    <rect y=""""17%"""" x="""""" & _X & """""" width="""""" & _Width & """""" height=""""87%"""" fill="""""" & _barColor & """"""></rect>    
+    <text text-anchor="""""" & _Anchor & """""" x="""""" & _XText & """""" dx="""""" & _DX & """""" y=""""55%"""" font-weight="""""" & _FontWeight & """""">""
+        & FORMAT ( _Value, ""+#;-#;#"" ) & ""</text>"" & [SVG Style] & ""
+</svg>""
+RETURN
+    _SVG",_Measures,Viz Chart IBCS Headcount
+DeltaPlan HC,[Headcount Hires] - [Headcount Plan],_Measures,Viz Chart IBCS Headcount
+Average DeltaBU HC,"ROUND (
+    AVERAGEX ( ALLSELECTED ( Department[Department] ), [Actual AC] - [BU BarChart] ),
+    0
+)",_Measures,Viz Chart IBCS Headcount
+DeltaPlan% SVG HC,"VAR _ColorGrey = ""#c6c6c6""
+VAR _ColorRed = ""#a4031f""
+VAR _ColorGreen = ""#384d48""
+VAR _ColorBlack = ""#404040""
+VAR _Value =
+    --ΔPY%
+    IF (
+        HASONEVALUE ( Department[Department] ),
+        [DeltaPlan% HC],
+        [Average DeltaBU% HC]
+    )
+VAR _FontWeight =
+    --'normal' font for sales persons, 'bold' font for total row (average)
+    IF (
+        HASONEVALUE ( Department[Department] ),
+        ""normal"",
+        ""bold""
+    )
+VAR _maxValue =
+    --max value to calcualte axis X scale
+    MAX (
+        ABS ( MAXX ( ALLSELECTED ( 'Department' ), [DeltaPlan% HC] ) ),
+        ABS ( MINX ( ALLSELECTED ( 'Department' ), [DeltaPlan% HC] ) )
+    )
+VAR _WidthValue =
+    --bar width (numeric value)
+    ( DIVIDE ( ABS ( _Value ), _maxValue ) / 2 ) * 0.7
+VAR _Width =
+    --bar width - text for SVG
+    FORMAT ( _WidthValue, ""0.0%"" )
+VAR _barColor =
+    --green or red
+    IF ( _Value > 0, _ColorGreen, _ColorRed )
+VAR _X =
+    --x position of a bar (pin)
+    SWITCH (
+        TRUE (),
+        _Value >= 0, ""50%"",
+        _Value < 0, FORMAT ( 0.5 - _WidthValue, ""0.0%"" )
+    )
+VAR _XPinhead =
+    --x position of a bar (pinhead)
+    SWITCH (
+        TRUE (),
+        _Value >= 0,
+            FORMAT ( 0.5 + _WidthValue - 3 / 200, ""0.0%"" ),
+        _Value < 0,
+            FORMAT ( 0.5 - _WidthValue - 3 / 200, ""0.0%"" )
+    )
+VAR _XText =
+    --x position of a label
+    SWITCH (
+        TRUE (),
+        _Value >= 0, FORMAT ( 0.5 + _WidthValue, ""0%"" ),
+        _Value < 0, _X
+    )
+VAR _Anchor =
+    --text anchor
+    SWITCH ( TRUE (), _Value >= 0, ""start"", _Value < 0, ""end"" )
+VAR _DX =
+    --text offset along axis X
+    SWITCH ( TRUE (), _Value >= 0, 10, _Value < 0, - 10 )
+VAR _Rank =
+    --row value rank to ensure correct column sorting
+    10000
+        + RANKX ( ALLSELECTED ( 'Department'[Department] ), [DeltaPlan% HC],, ASC )
+VAR _SVG =
+    --SVG code
+    --header
+    --comment with Rank text for sorting
+    --line (axis Y)
+    --rectangle black pinhead
+    --rectangle for DeltaPY% (green or red)
+    --text data label for DeltaPY%
+    --SVG style
+    ""data:image/svg+xml;utf8,"" & ""<svg xmlns=""""http://www.w3.org/2000/svg"""">
+    /*"" & _Rank & ""*/
+    <line  x1=""""50%"""" x2=""""50%"""" y1=""""0%"""" y2=""""100%"""" stroke="""""" & _ColorGrey & """""" stroke-width=""""1""""></line >
+    <rect y=""""35%"""" x="""""" & _XPinhead & """""" width="""""" & ""10"" & """""" height=""""30%"""" fill="""""" & _ColorBlack & """"""></rect>   
+    <rect y=""""45%"""" x="""""" & _X & """""" width=""""""
+        & FORMAT ( _Width, ""0.0%"" ) & """""" height=""""10%"""" fill="""""" & _barColor & """"""></rect>
+    
+        <text text-anchor="""""" & _Anchor & """""" x="""""" & _XText & """""" dx="""""" & _DX & """""" y=""""55%"""" font-weight="""""" & _FontWeight & """""">""
+        & FORMAT ( _Value, ""+#,0;-#,0;#,0"" ) & ""</text>    
+"" & [SVG Style] & ""
+</svg>""
+RETURN
+    _SVG",_Measures,Viz Chart IBCS Headcount
+DeltaPlan% HC,"ROUND (
+    DIVIDE ( [DeltaPlan HC], [Headcount Plan]) * 100,
+    0
+)",_Measures,Viz Chart IBCS Headcount
+Average DeltaBU% HC,"VAR _DeltaTotal =
+    SUMX ( ALLSELECTED ( Department[Department]), [DeltaBU] )
+VAR _PYTotal =
+    SUMX ( ALLSELECTED ( Department[Department]), [DeltaBU] )
+VAR _Result =
+    ROUND ( DIVIDE ( _DeltaTotal, _PYTotal ) * 100, 0 )
+RETURN
+    _Result",_Measures,Viz Chart IBCS Headcount
+"Hires,Plan SVG HC","VAR _ColorAC = ""#384D48""
+VAR _ColorBU = ""#d8d4d5""
+VAR _ValueAvg = [Average Hires HC]
+VAR _ValueAC =
+    IF ( HASONEVALUE ( Department[Department] ), [Headcount Hires], _ValueAvg )
+VAR _FontWeight =
+    IF ( HASONEVALUE ( 'Department'[Department] ), ""normal"", ""bold"" )
+VAR _ValueBU = [Headcount Plan]
+VAR _maxValue =
+    --max value (AC and BU)
+    MAX (
+        MAXX ( ALLSELECTED ( 'Department' ), [Headcount Hires] ),
+        MAXX ( ALLSELECTED ( 'Department' ), [Headcount Plan] )
+    ) / 0.5
+VAR _WidthAvg =
+    --width (up to 100%)
+    FORMAT ( DIVIDE ( _ValueAvg, _maxValue ), ""0%"" )
+VAR _WidthAC =
+    --width (up to 100%)
+    FORMAT ( DIVIDE ( _ValueAC, _maxValue ), ""0%"" )
+VAR _WidthPY =
+    --width (up to 100%)
+    FORMAT ( DIVIDE ( _ValueBU, _maxValue ), ""0%"" )
+VAR _Rank =
+    --row value rank to ensure correct column sorting (by AC value)
+    100000
+        + RANKX ( ALLSELECTED ( 'Department' ), [Headcount Hires],, ASC )
+VAR _SVG =
+    --SVG code
+    --header
+    --line (Average AC)
+    --rectangle for PY
+    --rectangle for AC
+    --text data label for AC #,##0.0 ""#,##0,.0""
+    --SVG style
+    ""data:image/svg+xml;utf8,"" & ""<svg xmlns=""""http://www.w3.org/2000/svg"""">
+    /*"" & _Rank & ""*/
+    <line  x1="""""" & _WidthAvg & """""" x2="""""" & _WidthAvg & """""" y1=""""0%"""" y2=""""100%"""" stroke="""""" & _ColorAC & """""" stroke-width=""""1""""></line >
+    <rect y=""""2%"""" x=""""0"""" width="""""" & _WidthPY & """""" height=""""67%"""" fill="""""" & _ColorBU & """"""></rect>
+    <rect y=""""17%"""" x=""""0"""" width="""""" & _WidthAC & """""" height=""""67%"""" fill="""""" & _ColorAC & """"""></rect>   
+    <text x="""""" & _WidthAC & """""" dx=""""5"""" y=""""55%"""" font-weight="""""" & _FontWeight & """""">""
+        & FORMAT ( _ValueAC, ""#,##0"" ) & ""</text>"" & [SVG Style] & ""
+</svg>""
+RETURN
+    _SVG",_Measures,Viz Chart IBCS Headcount
+Base Zero,0,_Measures,Viz Bar Chart En
+Whole,1,_Measures,Viz Bar Chart En
+Title 1.1,"""Headcount Details""",_Measures,Text Title
+Title 2,"""Cost & Budget Performance""",_Measures,Text Title
+BUvPQ,[Budget BU] - [Budget Previous Quarter (PQ)],_Measures,KPIs
+BUvPQ Arrow,"VAR UpArrow = ""▲""
+VAR DownArrow = ""▼""
+VAR BUDiff = [BUvPQ]
+
+RETURN
+    IF(
+        BUDiff < 0,
+        FORMAT(ROUND(BUDiff, 0), ""#,##0,.0"") &"" ""&DownArrow, 
+        FORMAT(ROUND(BUDiff, 0), ""#,##0,.0"") &"" ""&UpArrow
+    )",_Measures,KPIs
+Title 3,"""AI Visuals""",_Measures,Text Title
+Build By,"""Author: Hajar Shuid""",_Measures,Text Title
+Spend Initiation Rate YES,"VAR TotalSpendInitiatedYes = 
+    COUNTROWS(
+        FILTER(
+            'Role and Spend',
+            'Role and Spend'[Spend Initiated] = ""Y""
+        )
+    )
+VAR TotalSpend = 
+    COUNTROWS('Role and Spend')
+
+RETURN
+IF(
+    TotalSpend > 0,
+    DIVIDE(TotalSpendInitiatedYes, TotalSpend, 0),
+    0
+)",Role and Spend,
+Spend Initiated YES,"COUNTROWS (
+        FILTER ( 'Role and Spend', 'Role and Spend'[Spend Initiated] = ""Y"" ))",Role and Spend,
+Spend Initiation Rate NO,"VAR TotalSpendInitiatedNo = 
+    COUNTROWS(
+        FILTER(
+            'Role and Spend',
+            'Role and Spend'[Spend Initiated] = ""N""
+        )
+    )
+VAR TotalSpend = 
+    COUNTROWS('Role and Spend')
+
+RETURN
+IF(
+    TotalSpend > 0,
+    DIVIDE(TotalSpendInitiatedNo, TotalSpend, 0),
+    0
+)",Role and Spend,
+Spend Initiation Rate Blank,"VAR TotalSpendInitiatedBlank = 
+    COUNTROWS(
+        FILTER(
+            'Role and Spend',
+            ISBLANK('Role and Spend'[Spend Initiated])
+        )
+    )
+VAR TotalSpend = 
+    COUNTROWS('Role and Spend')
+
+RETURN
+IF(
+    TotalSpend > 0,
+    DIVIDE(TotalSpendInitiatedBlank, TotalSpend, 0),
+    0
+)",Role and Spend,
+Spend Initiated NO,"COUNTROWS (
+        FILTER ( 'Role and Spend', 'Role and Spend'[Spend Initiated] = ""N"" ))",Role and Spend,
+Spend Initiated Blank,"COUNTROWS (
+    FILTER (
+        'Role and Spend',
+        ISBLANK ( 'Role and Spend'[Spend Initiated] )
+    )
+)",Role and Spend,
+Last Refresh,"""Data as of: ""
+    & FORMAT ( MAX ( 'Date Refresh'[Refresh Date] ), ""dd-mmm-yyyy hh:nn"" )",Date Refresh,
+__Default measure,1,,
