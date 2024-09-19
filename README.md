@@ -215,3 +215,5 @@ CALCULATE (
 In the process of developing and maintaining this Financial Analytics Dashboard, we encountered and addressed several data quality issues. This document outlines our approach to ensuring data integrity and the specific challenges we faced. See [Data Quality Management](data-quality-management.md).
 
 
+<br><hr>
+[🔼 Back to top](#hiring-investment-performance-analysis)
