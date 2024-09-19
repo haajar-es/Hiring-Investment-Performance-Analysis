@@ -116,7 +116,9 @@ _**Report Line in Thousands of USD**_
 
 ## DAX Measures
 
-Here are some key DAX measures used in the dashboard:
+Here are some key DAX measures used in the dashboard.
+
+Refer other DAX measures at [here](scripts/dax-measures.csv).
 
 ```dax
 Actual =
